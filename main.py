@@ -132,7 +132,7 @@ class Simulator:
 
     def _random_genome(self) -> Genome:
         parts: List[BodyPart] = [BodyPart(BodyPartType.CORE, size=1.0)]
-        while len(parts) < self.config.max_parts and self.rng.random() < 0.3:
+        while len(parts) < self.config.max_parts and self.rng.random() < 0.7:
             parts.append(
                 BodyPart(
                     kind=self.rng.choice(list(BodyPartType)),
