@@ -118,15 +118,20 @@ def view_genome(genome: Genome, window_size: int = 640) -> None:
     pygame.quit()
 
 
+def _summarize_genome(genome: Genome) -> str:
+    return ", ".join(f"{p.kind.value}:{p.size:.2f}" for p in genome.parts)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Display a creature genome with labeled body parts")
     parser.add_argument("--max-parts", type=int, default=7, help="Maximum parts when generating a random genome")
-    parser.add_argument("--seed", type=int, default=123, help="RNG seed for deterministic genome")
+    parser.add_argument("--seed", type=int, default=None, help="RNG seed; omit for nondeterministic genome")
     parser.add_argument("--window-size", type=int, default=640, help="Viewer window size in pixels")
     args = parser.parse_args()
 
     rng = np.random.default_rng(args.seed)
     genome = _random_genome(rng, args.max_parts)
+    print(f"Viewer seed={args.seed if args.seed is not None else 'random'}, parts=[{_summarize_genome(genome)}]")
     view_genome(genome, window_size=args.window_size)
 
 
