@@ -24,9 +24,10 @@ def _random_genome(rng: np.random.Generator, max_parts: int) -> Genome:
     return Genome(parts=parts)
 
 
-def _creature_radius(genome: Genome) -> float:
+def _creature_radius(genome: Genome, max_radius: float) -> float:
     total_size = sum(part.size for part in genome.parts) or 1.0
-    return max(40.0, total_size * 60.0)
+    target = max(40.0, total_size * 60.0)
+    return min(target, max_radius)
 
 
 def _draw_creature_with_callouts(screen: "pygame.Surface", genome: Genome) -> None:
@@ -39,7 +40,9 @@ def _draw_creature_with_callouts(screen: "pygame.Surface", genome: Genome) -> No
     parts = genome.parts or [BodyPart(BodyPartType.CORE, size=1.0)]
     angle_step = (2.0 * math.pi) / len(parts)
     base_angle = -math.pi / 2.0
-    radius = int(_creature_radius(genome))
+    margin = 80  # leave room for callout text
+    max_radius = max(20, min(width, height) / 2 - margin)
+    radius = int(_creature_radius(genome, max_radius))
     inner_r = max(12, int(radius * 0.35))
 
     font = pygame.font.SysFont("consolas", 16)
@@ -78,16 +81,21 @@ def _draw_creature_with_callouts(screen: "pygame.Surface", genome: Genome) -> No
             center[0] + int(outer * math.cos(mid)),
             center[1] + int(outer * math.sin(mid)),
         )
+        callout_extension = radius * 0.2 + 30
         callout_end = (
-            center[0] + int((outer + 40) * math.cos(mid)),
-            center[1] + int((outer + 40) * math.sin(mid)),
+            center[0] + int((outer + callout_extension) * math.cos(mid)),
+            center[1] + int((outer + callout_extension) * math.sin(mid)),
         )
         pygame.draw.line(screen, line_color, callout_start, callout_end, width=2)
 
-        label_pos = (
+        label_pos = [
             callout_end[0] - label_w // 2,
             callout_end[1] - label_h // 2,
-        )
+        ]
+        pad = 8
+        label_pos[0] = max(pad, min(label_pos[0], width - label_w - pad))
+        label_pos[1] = max(pad, min(label_pos[1], height - label_h - pad))
+
         pygame.draw.rect(screen, (32, 32, 32), (*label_pos, label_w, label_h))
         pygame.draw.rect(screen, line_color, (*label_pos, label_w, label_h), width=1)
         screen.blit(label_surf, label_pos)
