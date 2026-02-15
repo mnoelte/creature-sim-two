@@ -6,6 +6,7 @@ from typing import List, Optional, Sequence
 import numpy as np
 
 from config import SimulationConfig
+from genome_utils import ensure_all_part_types, random_genome
 from models import BodyPart, BodyPartType, Creature, Food, Genome, PartSummary, World, PART_COLORS
 
 
@@ -35,20 +36,7 @@ class Simulator:
         return Creature(position=pos, velocity=vel, energy=energy, genome=genome)
 
     def _random_genome(self) -> Genome:
-        if self.config.max_parts < len(BodyPartType):
-            raise ValueError("max_parts must be at least the number of body part types")
-
-        parts: List[BodyPart] = []
-        for kind in BodyPartType:
-            parts.append(BodyPart(kind=kind, size=float(self.rng.uniform(0.5, 1.5))))
-        while len(parts) < self.config.max_parts and self.rng.random() < 0.7:
-            parts.append(
-                BodyPart(
-                    kind=self.rng.choice(list(BodyPartType)),
-                    size=float(self.rng.uniform(0.5, 1.5)),
-                )
-            )
-        return Genome(parts=self._ensure_all_part_types(parts))
+        return random_genome(self.rng, self.config.max_parts)
 
     def step(self, tick_dt: float) -> None:
         self._respawn_food(tick_dt)
@@ -244,7 +232,7 @@ class Simulator:
                 break
             parts.append(BodyPart(kind=extra.kind, size=extra.size))
         parts = parts[: self.config.max_parts]
-        parts = self._ensure_all_part_types(parts)
+        parts = ensure_all_part_types(parts, self.rng, self.config.max_parts)
         return Genome(parts=parts)
 
     def _mutate_genome(self, genome: Genome) -> Genome:
@@ -271,27 +259,8 @@ class Simulator:
             type_counts[dropped_kind] -= 1
 
         parts = parts[: self.config.max_parts]
-        parts = self._ensure_all_part_types(parts)
+        parts = ensure_all_part_types(parts, self.rng, self.config.max_parts)
         return Genome(parts=parts)
-
-    def _ensure_all_part_types(self, parts: List[BodyPart]) -> List[BodyPart]:
-        type_counts = {kind: 0 for kind in BodyPartType}
-        for p in parts:
-            type_counts[p.kind] = type_counts.get(p.kind, 0) + 1
-
-        missing = [kind for kind, count in type_counts.items() if count == 0]
-        for kind in missing:
-            if len(parts) < self.config.max_parts:
-                parts.append(BodyPart(kind=kind, size=float(self.rng.uniform(0.5, 1.5))))
-            else:
-                replace_candidates = [i for i, p in enumerate(parts) if type_counts[p.kind] > 1]
-                if not replace_candidates:
-                    replace_candidates = list(range(len(parts)))
-                idx = int(self.rng.choice(replace_candidates))
-                type_counts[parts[idx].kind] -= 1
-                parts[idx] = BodyPart(kind=kind, size=float(self.rng.uniform(0.5, 1.5)))
-                type_counts[kind] = type_counts.get(kind, 0) + 1
-        return parts
 
     def run_headless(self) -> None:
         total_ticks = self.config.generations * self.config.ticks_per_generation
