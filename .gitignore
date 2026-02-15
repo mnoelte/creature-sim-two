@@ -30,3 +30,7 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# MN - me
+local/
+
